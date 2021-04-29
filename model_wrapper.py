@@ -1,6 +1,6 @@
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from pytorch_lightning.metrics.functional.classification import accuracy, f1_score
+from pytorch_lightning.metrics.functional import accuracy, f1
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 import mlflow
@@ -86,12 +86,12 @@ class TrainingModel(pl.LightningModule):
     labels = labels[mask]
     pred = logits.softmax(-1).argmax(-1)
     num_classes = logits.shape[-1]
-    val_acc = accuracy(pred, labels, num_classes=num_classes).item()
+    val_acc = accuracy(pred, labels).item()
     self.log('val_acc', val_acc)
     report = {
         'accuracy' : val_acc,
-        'micro_f1' : f1_score(pred, labels, num_classes=num_classes, class_reduction='micro').item(),
-        'macro_f1' : f1_score(pred, labels, num_classes=num_classes, class_reduction='macro').item()
+        'micro_f1' : f1(pred, labels, num_classes=num_classes, average='micro').item(),
+        'macro_f1' : f1(pred, labels, num_classes=num_classes, average='macro').item()
     }
 
     mlflow.log_metrics(report)
