@@ -71,27 +71,25 @@ class TrainingModel(pl.LightningModule):
   def validation_step(self, batch, batch_nb):
     out = self.base_step(batch)
     loss = out.loss
+    logits = out.logits.view(-1, out.logits.size(-1))
+    labels = batch[-2].view(-1)
+    mask = labels != -100
+    logits = logits[mask]
+    labels = labels[mask]
+    pred = logits.softmax(-1).argmax(-1)
+    true_pred = (pred == labels).sum().item()
+    num_elems = labels.shape[0]
     return {
             'val_loss' : loss, 
-            'logits' : out.logits, 
-            'labels' : batch[-2]
+            'true_pred' : true_pred, 
+            'num_elems' : num_elems
            }
   
   def validation_epoch_end(self, outputs):
     # flatten for seq2seq models -> every sentence is weighted equally
-    logits = torch.cat([elem['logits'].view(-1, elem['logits'].size(-1)) for elem in outputs], 0)
-    labels = torch.cat([elem['labels'].view(-1) for elem in outputs], 0)
-    mask = labels != -100 # ignore padding labels
-    logits = logits[mask]
-    labels = labels[mask]
-    pred = logits.softmax(-1).argmax(-1)
-    num_classes = logits.shape[-1]
-    val_acc = accuracy(pred, labels).item()
+    true_pred = sum([elem['true_pred'] for elem in outputs])
+    num_elems = sum([elem['num_elems'] for elem in outputs])
+    val_acc = true_pred / num_elems
     self.log('val_acc', val_acc)
-    report = {
-        'accuracy' : val_acc,
-        'micro_f1' : f1(pred, labels, num_classes=num_classes, average='micro').item(),
-        'macro_f1' : f1(pred, labels, num_classes=num_classes, average='macro').item()
-    }
-
+    report = {'accuracy' : val_acc}
     mlflow.log_metrics(report)
