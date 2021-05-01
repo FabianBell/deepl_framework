@@ -77,7 +77,7 @@ class TrainingModel(pl.LightningModule):
     logits = logits[mask]
     labels = labels[mask]
     pred = logits.softmax(-1).argmax(-1)
-    true_pred = (pred == labels).sum().item()
+    true_pred = (pred == labels).sum()
     num_elems = labels.shape[0]
     return {
             'val_loss' : loss, 
@@ -90,6 +90,7 @@ class TrainingModel(pl.LightningModule):
     true_pred = sum([elem['true_pred'] for elem in outputs])
     num_elems = sum([elem['num_elems'] for elem in outputs])
     val_acc = true_pred / num_elems
+    val_acc = val_acc.item()
     self.log('val_acc', val_acc)
     report = {'accuracy' : val_acc}
     mlflow.log_metrics(report)
