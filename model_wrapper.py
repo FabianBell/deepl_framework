@@ -4,6 +4,7 @@ from pytorch_lightning.metrics.functional import accuracy, f1
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 import mlflow
+from .utils import pack
 
 class TrainingModel(pl.LightningModule):
   """
@@ -31,10 +32,14 @@ class TrainingModel(pl.LightningModule):
     return dataloader
 
   def train_dataloader(self):
-    return self.get_dataloader('train', True)
+    self.train_dataloader = self.get_dataloader('train', True)
+    self.experiment._update_train_dataset()
+    return self.train_dataloader
 
   def val_dataloader(self):
-    return self.get_dataloader('val', False)
+    self.val_dataloader = self.get_dataloader('val', False)
+    self.experiment._update_val_dataset()
+    return self.val_dataloader
 
   def configure_optimizers(self):
     if self.experiment.lr is None:
@@ -56,10 +61,7 @@ class TrainingModel(pl.LightningModule):
     }
 
   def base_step(self, batch):
-    inp = batch[:-2]
-    target = batch[-2]
-    keys = batch[-1]
-    inp = {k : v for k, v in zip(keys, inp)}
+    inp, target = pack(batch)
     out = self(**inp, labels=target)
     return out
 
@@ -85,8 +87,13 @@ class TrainingModel(pl.LightningModule):
             'num_elems' : num_elems
            }
   
+  def training_epoch_end(self, outputs):
+    self.experiment._update_train_dataset()
+
+
   def validation_epoch_end(self, outputs):
     # flatten for seq2seq models -> every sentence is weighted equally
+    self.experiment._update_val_dataset()
     true_pred = sum([elem['true_pred'] for elem in outputs])
     num_elems = sum([elem['num_elems'] for elem in outputs])
     val_acc = true_pred / num_elems

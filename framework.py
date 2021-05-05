@@ -66,11 +66,37 @@ class Experiment(ABC):
         """
         pass
 
+    def update_train_dataset(self, train_dataloader, model):
+        """
+        Update the train dataset 
+        Will be called at the beginning of training and after every training epoch
+        """
+        pass 
+
+    def update_val_dataset(self, val_dataloader, model):
+        """
+        Update the validation dataset
+        Will be called at the beginning of training and after every validation epoch
+        """
+        pass 
+
+    def _update_train_dataset(self):
+        """
+        Collects relevant data for updating the train dataset and calls the update function
+        """
+        self.update_train_dataset(self.model.train_dataloader, self.model.model)
+
+    def _update_val_dataset(self):
+        """
+        Collects relevant data for updating the validation dataset and calls the update function
+        """
+        self.update_val_dataset(self.model.val_dataloader, self.model.model)
+
     def _get_params(self):
         """
         Prepares the parameter for logging
         """
-        params = deepcopy(self.__dict__)
+        params = deepcopy({k : v for k, v in self.__dict__.items() if k != 'model'})
         params['batch_fn'] = self.batch_fn.__name__
         params['lr'] = 'optimizer default' if self.lr is None else self.lr
         params['optimizer_const'] = self.optimizer_const.__name__
@@ -101,12 +127,12 @@ class Experiment(ABC):
             callbacks=[checkpoint_callback],
             num_sanity_val_steps=0,  # avoid logging of accuracy of initialized model
         )
-        model = TrainingModel(self)
-        mlflow.set_experiment(model.model.__class__.__name__)
+        self.model = TrainingModel(self)
+        mlflow.set_experiment(self.model.model.__class__.__name__)
         with mlflow.start_run(run_name=self.name):
             mlflow.log_params(self._get_params())
-            trainer.fit(model)
+            trainer.fit(self.model)
             if not os.path.exists(OUTPUT_DIR):
                 os.mkdir(OUTPUT_DIR)
             model_path = os.path.join(
-                OUTPUT_DIR, f'model_{model.model.__class__.__name__}.pt')
+                OUTPUT_DIR, f'model_{self.model.model.__class__.__name__}.pt')
