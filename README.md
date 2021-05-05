@@ -1,13 +1,18 @@
 # NLP Deep Learning Framework
 This is a deepl learning framework for classification and seq2seq tasks.
 
-## Project structure 
-    ├── deepl_framework   --> framework submodule
+## Installation
+    pip install deep-nlp
+
+## Example Project
+
+### Structure 
     ├── data              --> containing the trainings and validation data
+    |   ├── train.csv     --> training dataset
+    |   └── val.csv       --> validation dataset
+    ├── Experiment.py     --> containing the model and training logic
     └── dataset.py        --> containing the Dataset object 
- 
-## Example
-In this example the dataset folder comntains the files `train.csv` and `val.csv`.
+    
 ### Dataset.py
 ```python
 from torch.utils.data import Dataset
@@ -26,7 +31,8 @@ class ExampleDataset(Dataset):
 ```
 ### Experiment.py
 ```python
-from deepl_framework import Experiment, ExampleDataset, unpack
+from deep_nlp import Experiment, unpack
+from dataset import ExampleDataset
 from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
 import torch
 
@@ -39,7 +45,7 @@ class ClassificationExperiment(Experiment):
   def get_model(self):
     model = DistilBertForSequenceClassification.from_pretrained('distilbert-base-uncased')
     return model
-  
+    
   def batch_fn(self, batch):
     source, target = zip(*batch)
     source_inp = self.tokenizer(source, padding=True, return_tensors=True)
