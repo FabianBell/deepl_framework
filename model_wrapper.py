@@ -70,11 +70,16 @@ class TrainingModel(pl.LightningModule):
     out = self.base_step(batch)
     loss = out.loss
     logits = out.logits.view(-1, out.logits.size(-1))
-    labels = batch[-2].view(-1)
+    # allow to produce self generated labels
+    if 'labels' in out:
+        labels = out.labels
+    else:    
+        labels = batch[-2]
+    labels = labels.view(-1)
     mask = labels != -100
-    logits = logits[mask]
-    labels = labels[mask]
     pred = logits.softmax(-1).argmax(-1)
+    pred = pred[mask]
+    labels = labels[mask]
     true_pred = (pred == labels).sum()
     num_elems = labels.shape[0]
     return {
