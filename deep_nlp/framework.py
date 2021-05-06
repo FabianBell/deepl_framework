@@ -32,10 +32,6 @@ class Experiment(ABC):
                  num_workers=4, optimizer_const=AdamW, patience=2,
                  accumulate_grad_batches=1, check_val_every_n_epoch=1,
                  gpus=None, name=None):
-        """
-        :param batch_size: Batch size used for training
-        :type batch_size: str
-        """
         self.name = name
         self.lr = lr
         self.num_workers = num_workers
