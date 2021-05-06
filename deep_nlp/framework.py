@@ -1,5 +1,5 @@
 """
-@package Framework for experiments and training of neural networks that follow the hugging face model style
+Framework for experiments and training of neural networks that follow the hugging face model style
 """
 from .utils import unpack, pack
 from .model_wrapper import TrainingModel
@@ -28,10 +28,14 @@ class Experiment(ABC):
     Configuration object of a hugging face experiment.
     """
 
-    def __init__(self, batch_size, num_epochs, dataset_const, lr=None, weight_decay=None,
+    def __init__(self, batch_size, num_epochs, dataset_const , lr=None, weight_decay=None,
                  num_workers=4, optimizer_const=AdamW, patience=2,
                  accumulate_grad_batches=1, check_val_every_n_epoch=1,
                  gpus=None, name=None):
+        """
+        :param batch_size: Batch size used for training
+        :type batch_size: str
+        """
         self.name = name
         self.lr = lr
         self.num_workers = num_workers
